@@ -77,7 +77,7 @@ markup3d.prototype.load = function() {
     document.addEventListener('click', e => { this.onClick(e) }, false);
     document.addEventListener('mousemove', e => { this.onMouseMove(e) }, false);
     document.addEventListener('touchend', e => { this.onClickTouch(e) }, false);
-    document.addEventListener('mousewheel', e => { this.onMouseMove(e) }, false);
+    document.addEventListener('mousewheel', e => { this.onMouseMove(e) }, true);
 
 
     // Load markup points into Point Cloud
@@ -147,7 +147,6 @@ markup3d.prototype.load = function() {
 
     // Dispatch Message when a point is clicked
     this.onMouseMove = function(event) {
-        if (event.button !== 0) return;
         this.update_DivLabel('onMarkupMove');
         this.updateHitTest(event);
     }
