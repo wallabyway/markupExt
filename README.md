@@ -10,7 +10,7 @@ I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed 
 #### Try the DEMO:  [Click Here](https://wallabyway.github.io/markupExt/) 
 
 
-[![](vids/markupExt.gif)](vids/markupExt.webm)
+[![](vids/markupExt.gif)](https://wallabyway.github.io/markupExt/img/markupExt.webm)
 
 
 Following on from Philippe's great post, I added a couple of things...
@@ -35,7 +35,7 @@ Here are 10,000 RFI's, etc running at 60 FPS...
 
 
 
-[![](vids/markupExtPerfm.gif)](vids/markupExtPerfm.webm)
+[![](vids/markupExtPerfm.gif)](https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm)
 
 
 
