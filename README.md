@@ -10,7 +10,7 @@ I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed 
 #### Try the DEMO:  [Click Here](https://wallabyway.github.io/markupExt/) 
 
 
-![](markupExt.gif)
+[![](vids/markupExt.gif)](vids/markupExt.webm)
 
 
 Following on from Philippe's great post, I added a couple of things...
@@ -33,7 +33,9 @@ gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
 
 Here are 10,000 RFI's, etc running at 60 FPS...
 
-<img src="markupExtPerfm.gif" style="width:640px"/>
+
+
+[![](vids/markupExtPerfm.gif)](vids/markupExtPerfm.webm)
 
 
 
