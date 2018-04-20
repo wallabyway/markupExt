@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>3D-markup demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no" />
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/style.min.css?v=3.3" type="text/css">
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/three.js?v=v3.3"></script>
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v3.3"></script>
+    <script src="app.js"></script>
+    <script src="markupExt.js"></script>
+    <style>
+        html {color: white; font-family: Avenir Next, Arial;}
+        a:link {color: white}
+        a:visited {color: white}
+        p {margin:15px 0 0 10px;}
+        ul { margin:0; list-style: none; }
+
+        #label { 
+            display:none; 
+            position:fixed; 
+            z-index:2; 
+            border: 2px solid #ccc; 
+            background-color: #404040; 
+            border-radius: 25px; 
+            padding: 10px;
+        }
+        #label img { width:200px;}
+
+        #menu {
+            margin: 30px;
+            padding: 0px 25px 5px 0px;
+            position:absolute;
+            background-color: #404040;
+            border: 2px solid white;
+            border-radius: 25px;
+            box-shadow: 10px 10px 15px #707070;
+            z-index: 2;
+        }
+    </style>
+</head>
+
+<body onload="initializeViewer();" style="margin:0">
+    <div id="forgeViewer" ></div>
+    <div id="label">na</div>
+    <div id="menu">
+    <p>> My Views</p>
+    <ul>
+        <li><a href="#" onClick="switchView('view1')">view 1</a></li>
+        <li><a href="#" onClick="switchView('view2')">view 2</a></li>
+        <li><a href="#" onClick="switchView('view3')">view 3</a></li>
+    </ul>
+    <br>
+    <div>
+</body>
+
+</html>
+
