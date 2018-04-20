@@ -7,7 +7,7 @@ This is an extension to Forge Viewer, so you can attach 3D markers to your scene
 I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed a markup technique to render a large number of points.
 
 
-#### Try the DEMO:  [Click Here](https://wallabyway.github.io/JCI-POC-piping/) 
+#### Try the DEMO:  [Click Here](https://wallabyway.github.io/markupExt/) 
 
 
 ![](markupExt.gif)
@@ -28,10 +28,12 @@ gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
 ```
 
 ##### Mobile Performance [Test](https://wallabyway.github.io/JCI-POC-piping/) :
+
 ...and finally, to get great performance on iPad and Android, I needed to avoid using too many div elements.  Now I just use one.  You can see the performance Test here:  
 
 Here are 10,000 RFI's, etc running at 60 FPS...
-<img src="markupExtPerfm.gif" style="width:100%">
+
+<img src="markupExtPerfm.gif" style="width:100%"/>
 
 
 
