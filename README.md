@@ -17,7 +17,8 @@ I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed 
 Following on from Philippe's great post, I added a couple of things...
 
 ##### > Multi-Icons:  
-<img src="docs/img/icons.png" style="width:35%"/>
+
+<img src="docs/img/icons.png" width="30%"/>
 
 To use multi-icons, I used a spritesheet and added this to the pointcloud fragment shader:
 ```
@@ -37,7 +38,7 @@ gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
 Here are 10,000 RFI's, etc running at 60 FPS...
 
 
-> <a href="https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm"><img src="vids/markupExtPerfm.gif" style="width:100%"/></a>
+> <a href="https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm"><img src="vids/markupExtPerfm.gif" width="100%"/></a>
 > (click the image to see [video](https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm))
 
 --
@@ -107,7 +108,9 @@ function moveLabel(p) {
 
 ##### > Icons / SpriteSheet
  Here are the current icons I use:
- ![](docs/img/icons.png)
+
+<img src="docs/img/icons.png" width="60%"/>
+
  
  Change the `docs/img/icons.png` file to your own icon set.
 
@@ -122,8 +125,6 @@ this.labelOffset = new THREE.Vector3(120,120,0);  // label offset 3D line offset
 this.xDivOffset = -0.2;  // x offset position of the div label wrt 3D line.
 this.yDivOffset = 0.4;  // y offset position of the div label wrt 3D line.
 ```
-
-![](markupExt.jpg)
 
 ##### > Adjusting the marker's 'Hit Radius' and 'Icon Size'
 ```
@@ -151,6 +152,8 @@ If you want the markup points to always appear on top of objects, change the `de
 .
 
 ## Info-Card details 
+
+![](markupExt.jpg)
 
 ##### > Line Color styling:
 You can change the line color at the top of the `docs/markupExt.js` here:
