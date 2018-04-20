@@ -33,7 +33,7 @@ gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
 
 Here are 10,000 RFI's, etc running at 60 FPS...
 
-<img src="markupExtPerfm.gif" style="width:100%"/>
+<img src="markupExtPerfm.gif" style="width:640px"/>
 
 
 
