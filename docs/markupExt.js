@@ -74,9 +74,10 @@ markup3d.prototype.load = function() {
 
     // setup listeners for new data and mouse events
     window.addEventListener("newData", e => { this.setMarkupData( e.detail ) }, false);
-    document.addEventListener('click', e => { this.onClick(e) }, false);
+    document.addEventListener('mousedown', e => { this.onClick(e) }, true);
+    document.addEventListener('touchstart', e => { this.onClick(e.changedTouches[0]) }, false);
     document.addEventListener('mousemove', e => { this.onMouseMove(e) }, false);
-    document.addEventListener('touchend', e => { this.onClickTouch(e) }, false);
+    document.addEventListener('touchmove', e => { this.onMouseMove(e.changedTouches[0]) }, false);
     document.addEventListener('mousewheel', e => { this.onMouseMove(e) }, true);
 
 
@@ -151,8 +152,8 @@ markup3d.prototype.load = function() {
         this.updateHitTest(event);
     }
 
-
     this.onClick = function() {
+        this.updateHitTest(event);
         if (!this.hovered) return;
         this.selected = this.hovered;
         this.update_Line();
@@ -161,11 +162,6 @@ markup3d.prototype.load = function() {
         viewer.clearSelection();
     }
 
-
-    this.onClickTouch = function(t) {
-        this.updateHitTest(t.changedTouches[0]);
-        onDocumentMouseClick();
-    }
     return true;
 };
 
