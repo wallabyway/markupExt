@@ -2,10 +2,8 @@
 
 #### Try the DEMO:  [Click Here](https://wallabyway.github.io/markupExt/) 
 
-
-> [![](vids/markupExt.gif)](https://wallabyway.github.io/markupExt/img/markupExt.webm)
+> <a href="https://wallabyway.github.io/markupExt/img/markupExt.webm"><img src="vids/markupExt.gif" width="100%"/></a>
 > (click the image to see [video](https://wallabyway.github.io/markupExt/img/markupExt.webm))
-
 
 ### Overview
 
