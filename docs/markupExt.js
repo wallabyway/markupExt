@@ -121,8 +121,9 @@ markup3d.prototype.load = function() {
 
     this.initMesh_Line = function() {
         var geom = new THREE.Geometry();
-        geom.vertices.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1,1,1), );
-        this.line3d = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: this.lineColor, linewidth: 4.0, }));
+        geom.vertices = [new THREE.Vector3(0, 0, 0),  new THREE.Vector3(0,1,1), new THREE.Vector3(1,1,1) ];
+        geom.faces = [new THREE.Face3(0,1,2)];
+        this.line3d = new THREE.Mesh( geom, new THREE.MeshBasicMaterial({ color: this.lineColor, side: THREE.DoubleSide }) );
         this.line3d.position.sub( this.offset );
         this.scene.add(this.line3d);
     }
@@ -131,6 +132,7 @@ markup3d.prototype.load = function() {
         var position = this.pointCloud.geometry.vertices[this.selected].clone();
         this.line3d.geometry.vertices[0] = position;
         this.line3d.geometry.vertices[1].set( position.x + this.labelOffset.x * Math.sign(position.x), position.y + this.labelOffset.y, position.z + this.labelOffset.z );
+        this.line3d.geometry.vertices[2].set( position.x + this.labelOffset.x * Math.sign(position.x), position.y + 20 + this.labelOffset.y, position.z + this.labelOffset.z );
         this.line3d.geometry.verticesNeedUpdate = true;
     }
 
