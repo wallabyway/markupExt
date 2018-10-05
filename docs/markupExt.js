@@ -49,8 +49,13 @@ markup3d.prototype.updateHitTest = function(event) {
     // on mouse move event, check if ray hit with pointcloud, move selection cursor
     // https://stackoverflow.com/questions/28209645/raycasting-involving-individual-points-in-a-three-js-pointcloud
     if (!this.pointCloud) return;
-    var x =  ((event.clientX - viewer.canvas.offsetLeft) / viewer.canvas.width) * 2 - 1;
-    var y = -((event.clientY - viewer.canvas.offsetTop) / viewer.canvas.height) * 2 + 1;    
+
+    let canvas = event.target;
+    let _x = event.offsetX * canvas.width / canvas.clientWidth | 0;
+    let _y = event.offsetY * canvas.height / canvas.clientHeight | 0;
+    let x = _x / canvas.clientWidth + -1; // scales from -1 to 1
+    let y = _y / canvas.clientHeight + -1; // scales from -1 to 1
+
     var vector = new THREE.Vector3(x, y, 0.5).unproject(this.camera);
     this.raycaster.set(this.camera.position, vector.sub(this.camera.position).normalize());
     var nodes = this.raycaster.intersectObject(this.pointCloud);
