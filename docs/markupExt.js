@@ -60,7 +60,7 @@ markup3d.prototype.updateHitTest = function(event) {
     this.raycaster.set(this.camera.position, vector.sub(this.camera.position).normalize());
     var nodes = this.raycaster.intersectObject(this.pointCloud);
     if (nodes.length > 0) {
-        if (this.hovered)
+        if (this.hovered || this.hovered === 0)
             this.geometry.colors[this.hovered].r = 1.0;
         this.hovered = nodes[0].index;
         this.geometry.colors[this.hovered].r = 2.0;
@@ -161,7 +161,7 @@ markup3d.prototype.load = function() {
 
     this.onClick = function() {
         this.updateHitTest(event);
-        if (!this.hovered) return;
+        if (!this.hovered && this.hovered !== 0) return;
         this.selected = this.hovered;
         this.update_Line();
         this.update_DivLabel('onMarkupClick');
