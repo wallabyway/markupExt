@@ -53,8 +53,8 @@ markup3d.prototype.updateHitTest = function(event) {
     let canvas = event.target;
     let _x = event.offsetX * canvas.width / canvas.clientWidth | 0;
     let _y = event.offsetY * canvas.height / canvas.clientHeight | 0;
-	let x = 2 * (_x / canvas.clientWidth) - 1; // scales from -1 to 1
-	let y = -2 * (_y / canvas.clientHeight) + 1; // scales from -1 to 1, with direction reversed
+    let x = 2 * (_x / canvas.clientWidth) - 1; // scales from -1 to 1
+    let y = -2 * (_y / canvas.clientHeight) + 1; // scales from -1 to 1, with direction reversed
 
     var vector = new THREE.Vector3(x, y, 0.5).unproject(this.camera);
     this.raycaster.set(this.camera.position, vector.sub(this.camera.position).normalize());
