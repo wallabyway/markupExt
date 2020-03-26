@@ -101,7 +101,7 @@ markup3d.prototype.load = function() {
 
 
     this.initMesh_PointCloud = function() {
-        if (this.pointCloud) 
+        if (this.pointCloud)
             this.scene.remove(this.pointCloud); //replace existing pointCloud Mesh
         else {
             // create new point cloud material
@@ -120,7 +120,11 @@ markup3d.prototype.load = function() {
         }
         this.pointCloud = new THREE.PointCloud(this.geometry, material);
         this.pointCloud.position.sub( this.offset );
-        this.scene.add(this.pointCloud);
+        if (!this.viewer.overlays.hasScene('custom-scene')) {
+this.viewer.overlays.addScene('custom-scene');
+}
+ this.viewer.overlays.addMesh(this.pointCloud , 'custom-scene');
+
     }
 
 
@@ -130,7 +134,11 @@ markup3d.prototype.load = function() {
         geom.faces = [new THREE.Face3(0,1,2)];
         this.line3d = new THREE.Mesh( geom, new THREE.MeshBasicMaterial({ color: this.lineColor, side: THREE.DoubleSide }) );
         this.line3d.position.sub( this.offset );
-        this.scene.add(this.line3d);
+        if (!this.viewer.overlays.hasScene('custom-scene')) {
+this.viewer.overlays.addScene('custom-scene');
+}
+ this.viewer.overlays.addMesh(this.line3d, 'custom-scene');
+
     }
 
     this.update_Line = function() {
