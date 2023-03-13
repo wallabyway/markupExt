@@ -53,14 +53,14 @@ markup3d.prototype.updateHitTest = function(event) {
     let canvas = event.target;
     let _x = event.offsetX * canvas.width / canvas.clientWidth | 0;
     let _y = event.offsetY * canvas.height / canvas.clientHeight | 0;
-    let x = _x / canvas.clientWidth + -1; // scales from -1 to 1
-    let y = _y / canvas.clientHeight + -1; // scales from -1 to 1
+    let x = 2 * (_x / canvas.clientWidth) - 1; // scales from -1 to 1
+    let y = -2 * (_y / canvas.clientHeight) + 1; // scales from -1 to 1, with direction reversed
 
     var vector = new THREE.Vector3(x, y, 0.5).unproject(this.camera);
     this.raycaster.set(this.camera.position, vector.sub(this.camera.position).normalize());
     var nodes = this.raycaster.intersectObject(this.pointCloud);
     if (nodes.length > 0) {
-        if (this.hovered)
+        if (this.hovered || this.hovered === 0)
             this.geometry.colors[this.hovered].r = 1.0;
         this.hovered = nodes[0].index;
         this.geometry.colors[this.hovered].r = 2.0;
@@ -169,7 +169,7 @@ this.viewer.overlays.addScene('custom-scene');
 
     this.onClick = function() {
         this.updateHitTest(event);
-        if (!this.hovered) return;
+        if (!this.hovered && this.hovered !== 0) return;
         this.selected = this.hovered;
         this.update_Line();
         this.update_DivLabel('onMarkupClick');
