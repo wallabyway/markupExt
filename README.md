@@ -7,7 +7,7 @@
 
 ### Overview
 
-This is an extension to Forge Viewer, so you can attach 3D markers to your scene with a pop-out info-card.  I originally used the same extension for the AR ConXTech demo (see http://vrock.it and original blog post).  
+This is an extension to APS Viewer, so you can attach 3D markers to your scene with a pop-out info-card.  I originally used the same extension for the AR ConXTech demo (see http://vrock.it and original blog post).  
 I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed a markup technique to render a large number of points.
 
 
