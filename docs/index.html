@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no" />
     <link rel="shortcut icon" href="#" />
     <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/style.min.css?v=7.*" type="text/css">
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.js?v=v7.*"></script>
     <script src="app.js"></script>
@@ -15,45 +16,56 @@
         html {color: white; font-family: Avenir Next, Arial;}
         a:link {color: white}
         a:visited {color: white}
+        
+        /* Override global white text for menu */
+        #menu * {
+            color: inherit !important;
+        }
+        
+        /* Ensure menu text is dark */
+        #menu h3 {
+            color: #1f2937 !important; /* gray-800 */
+        }
+        
+        #menu a {
+            color: #374151 !important; /* gray-700 */
+        }
+        
+        #menu a:hover {
+            color: #111827 !important; /* gray-900 */
+            background-color: #f3f4f6 !important; /* gray-100 */
+        }
         p {margin:15px 0 0 10px;}
         ul { margin:0; list-style: none; }
 
         #label {
-            display:none;
-            position:fixed;
-            z-index:2;
-            border: 2px solid #ccc;
-            background-color: #404040;
-            border-radius: 25px;
-            padding: 10px;
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            pointer-events: none;
         }
-        #label img { width:200px;}
 
         #menu {
             margin: 30px;
-            padding: 0px 25px 5px 0px;
-            position:absolute;
-            background-color: #404040;
-            border: 2px solid white;
-            border-radius: 25px;
-            box-shadow: 10px 10px 15px #707070;
-            z-index: 2;
+            padding: 20px 25px;
+            position: absolute;
+            z-index: 100;
         }
     </style>
 </head>
 
 <body onload="initializeViewer();" style="margin:0">
-    <div id="forgeViewer" ></div>
-    <div id="label">na</div>
-    <div id="menu">
-    <p>> My Views</p>
-    <ul>
-        <li><a href="#" onClick="switchView('view1')">view 1</a></li>
-        <li><a href="#" onClick="switchView('view2')">view 2</a></li>
-        <li><a href="#" onClick="switchView('view3')">view 3</a></li>
-    </ul>
-    <br>
-    <div>
+    <div id="apsViewer" ></div>
+    <div id="label"></div>
+    <div id="menu" class="bg-white rounded-lg shadow-lg border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Camera Views</h3>
+        <ul class="space-y-2">
+            <li><a href="#" onClick="switchView('view1')" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors">View 1</a></li>
+            <li><a href="#" onClick="switchView('view2')" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors">View 2</a></li>
+            <li><a href="#" onClick="switchView('view3')" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors">View 3</a></li>
+            <li><a href="#" onClick="switchView('view4')" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors">View 4</a></li>
+        </ul>
+    </div>
 </body>
 
 </html>
