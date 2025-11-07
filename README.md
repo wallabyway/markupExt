@@ -1,237 +1,146 @@
-## 3D Markup with Multi-icons and Info-Card
+# 3D Icons Extension for APS Viewer
 
-#### Try the DEMO:  [Click Here](https://wallabyway.github.io/markupExt/) 
+Enhance the APS Viewer SDK scene with GPU-accelerated “pushpin” icons that occlude behind models and support millions of instances at 60 FPS, with optional interactive card popups.
 
-> <a href="https://wallabyway.github.io/markupExt/img/markupExt.webm"><img src="vids/markupExt.gif" width="100%"/></a>
-> (click the image to see [video](https://wallabyway.github.io/markupExt/img/markupExt.webm))
+## Demo
 
-### Overview
+**[Try Live Demo →](https://wallabyway.github.io/markupExt/)**
 
-This is an extension to APS Viewer, so you can attach 3D markers to your scene with a pop-out info-card.  I originally used the same extension for the AR ConXTech demo (see http://vrock.it and original blog post).  
-I needed to show 1000's of RFI's and Issues in a large Revit scene, so I needed a markup technique to render a large number of points.
+![Image](https://github.com/user-attachments/assets/5051e835-65bb-4e58-8e63-1e20b8964da4)
 
+## Features
 
+- **High Performance**: Render 1,000,000+ icons at 60 FPS
+- **Multi-Icon Support**: 4 (or more) different icon types via a single 'sprite sheet'
+- **GPU Accelerated**: It uses PointCloud shader under the hood
+- **Two Usage Modes**: "Icons only", or "Icons with info card"
 
-Following on from Philippe's great post, I added a couple of things...
+## Installation
 
-##### > Multi-Icons:  
+### Option 1: Icons Only
 
-<img src="docs/img/icons.png" width="30%"/>
+Use this for simple markup visualization without interactive info cards.  
+> **NOTE:** You can remove the `icon3d.infoCard.js` file
 
-To use multi-icons, I used a spritesheet and added this to the pointcloud fragment shader:
-```
-gl_FragColor = gl_FragColor * texture2D(tex, vec2((gl_PointCoord.x+vColor.y*1.0)/4.0, 1.0-gl_PointCoord.y));
-```
+```javascript
+import { Icon3dToolExtension } from './ext/icon3d.js';
 
-##### > Point Scaling:  
-I also needed to scale the points so the points looked like they stuck to the object as I zoom in and out. I added this line of code to the vertex shader:
-```
-gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
-```
+// Register extension
+Autodesk.Viewing.theExtensionManager.registerExtension('icon3d', Icon3dToolExtension);
 
-##### > Mobile Performance [Test](https://wallabyway.github.io/JCI-POC-piping/) :
-
-...and finally, to get great performance on iPad and Android, I needed to avoid using too many div elements.  Now I just use one.  You can see the performance in the [video below](https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm) 
-
-Here are 10,000 RFI's, etc running at 60 FPS...
-
-
-> <a href="https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm"><img src="vids/markupExtPerfm.gif" width="100%"/></a>
-> (click the image to see [video](https://wallabyway.github.io/markupExt/img/markupExtPerfm.webm))
-
---
-.
-
-## How to use:
-
-Steps:
-
-1. Add `<script src="markupExt.js"></script>` to your `index.html`
-2. Load extension after `'onSuccess'` event, like so...
-
-```
-    function onSuccess() {
-        viewer.loadExtension("markup3d");
+// Load in viewer config
+const config = {
+    extensions: ['icon3d'],
+    extensionOptions: {
+        'icon3d': { dataSource: 'ext/icon3d.data.json' }
     }
-```
-3. Send your markup data via an event `'newData'`, like this...
+};
 
+const viewer = new Autodesk.Viewing.GuiViewer3D(div, config);
 ```
-// create 20 markup points at random x,y,z positions. 
 
-var dummyData = [];
-for (let i=0; i<20; i++) {
-    dummyData.push({
-        icon:  Math.round(Math.random()*3),  
-        x: Math.random()*300-150, 
-        y: Math.random()*50-20, 
-        z: Math.random()*150-130
-    });
-}        
-window.dispatchEvent(
-	new CustomEvent('newData', {'detail': dummyData})
+
+### Option 2: Icons with Info Cards
+
+Use this for interactive icons with clickable info cards and 3D line connectors.
+
+```javascript
+import { Icon3dExtension } from './ext/icon3d.infoCard.js';
+
+// Register extension
+Autodesk.Viewing.theExtensionManager.registerExtension('icon3d.infoCard', Icon3dExtension);
+
+// Load in viewer config
+const config = {
+    extensions: ['icon3d.infoCard'],
+    extensionOptions: {
+        'icon3d.infoCard': { dataSource: 'ext/icon3d.data.json' }
+    }
+};
+
+const viewer = new Autodesk.Viewing.GuiViewer3D(div, config);
+```
+
+## Data Format
+
+Create a JSON file with your markup data:
+
+```json
+[
+    {
+        "id": 1,
+        "x": 10.5,
+        "y": 20.3,
+        "z": 5.8,
+        "icon": 0,
+        "title": "Issue #1",
+        "description": "Foundation crack detected",
+        "priority": "Critical",
+        "assignee": "John Doe",
+        "date": "2024-01-15"
+    }
+]
+```
+
+**Icon Types:**
+- `0` = Issue
+- `1` = Warning  
+- `2` = RFI
+- `3` = Hazard
+
+## Customization
+
+### Change Icon Sprite Sheet
+
+Replace `ext/icons.png` with your own 4-icon sprite sheet (each icon 256x256px).
+
+### Adjust Icon Size
+
+Edit `ext/icon3d.js`:
+
+```javascript
+this.config = {
+    size: 150.0,      // Icon size
+    threshold: 5      // Click hit radius
+};
+```
+
+### Customize Info Card
+
+Edit `ext/icon3d.infoCard.js`:
+
+```javascript
+const LABEL_Z_OFFSET = 75;         // 3D line height (Z-axis)
+const LABEL_X_OFFSET = -90;        // 2D label X offset in pixels
+const LABEL_Y_OFFSET = -200;       // 2D label Y offset in pixels
+const LINE_COLOR = 0xffffff;       // White line color
+```
+
+The info card UI uses Tailwind CSS and can be customized in the `createCardHTML()` method.
+
+## Technical Details
+
+### GPU Shader Optimization
+
+**Multi-Icon Rendering** (Fragment Shader):
+```glsl
+gl_FragColor = gl_FragColor * texture2D(tex, 
+    vec2((gl_PointCoord.x + vColor.y * 1.0) / 4.0, 1.0 - gl_PointCoord.y)
 );
 ```
-> Note: `icon:` integer corresponds to an icon in the spritesheet (see options below). For example 0="Issue", 1="BIMIQ_Warning", 2="RFI", 3="BIMIQ_Hazard"
 
-4. Add a 'onMarkupClick' Listener
-
-```
-window.addEventListener("onMarkupClick", e=>{
-    var elem = $("label");
-    elem.style.display = "block";
-    moveLabel(e.detail);
-    elem.innerHTML = `<img src="img/${(e.detail.id%6)}.jpg"><br>Markup ID:${e.detail.id}`;
-}, false);
+**Distance-Based Scaling** (Vertex Shader):
+```glsl
+gl_PointSize = size * (size / (length(mvPosition.xyz) + 1.0));
 ```
 
-5. Add a 'onMarkupMove' Listener
 
-```
-window.addEventListener("onMarkupMove", e=>{
-   moveLabel(e.detail)
-}, false);
+## License
 
-function moveLabel(p) {
-   elem.style.left = ((p.x + 1)/2 * window.innerWidth) + 'px';
-   elem.style.top =  (-(p.y - 1)/2 * window.innerHeight) + 'px';            
-}
-```
+MIT License
+Copyright (c) 2025
 
---
-
-.
-
-## 2. Features and Options
-
-##### > Icons / SpriteSheet
- Here are the current icons I use:
-
-<img src="docs/img/icons.png" width="60%"/>
-
- 
- Change the `docs/img/icons.png` file to your own icon set.
-
-Note: The icon value corresponds to spritesheet  position. So icon #0="Issue", #1="BIMIQ_Warning", #2="RFI", #3="BIMIQ_Hazard"
-
-
-##### > Positioning your Info-Card
-You can reposition the popup Info-Card offset using the settings at the top of the `'docs/markupExt.js'` file
-
-```
-this.labelOffset = new THREE.Vector3(120,120,0);  // label offset 3D line offset position
-this.xDivOffset = -0.2;  // x offset position of the div label wrt 3D line.
-this.yDivOffset = 0.4;  // y offset position of the div label wrt 3D line.
-```
-
-##### > Adjusting the marker's 'Hit Radius' and 'Icon Size'
-```
-function markup3d(viewer, options) {
-    this.raycaster.params.PointCloud.threshold = 5; // hit-test markup size.  Change this if markup 'hover' doesn't work
-    this.size = 150.0; // markup size.  Change this if markup size is too big or small
-```
-##### > Make Points appear 'in Front' with Transparency
-If you want the markup points to always appear on top of objects, change the `depthWrite` from `true` to `false`.  Also change the `impl.scene` to `impl.sceneAfter`.  Finally, to make the points transparent, add opacity: 0.4 to the material shader.
-
-```
-    this.scene = viewer.impl.scene; 
-// change this to viewer.impl.sceneAfter with transparency
-
-    this.initMesh_PointCloud = function() {
-         ...
-         ...
-            var material = new THREE.ShaderMaterial({
-                ...
-                depthWrite: true,
-                depthTest: true,
-```
-
---
-.
-
-## Info-Card details 
-
-![](markupExt.jpg)
-
-##### > Line Color styling:
-You can change the line color at the top of the `docs/markupExt.js` here:
-
-```
-function markup3d(viewer, options) {
-   this.lineColor = 0xcccccc;
-```
-##### > Info-Card Styling
-The Info-Card colors and CSS styling can be found in the `'docs/index.html'` here:
-
-```
-        #label { 
-            display:none; 
-            position:fixed; 
-            z-index:2; 
-            border: 2px solid #ccc; 
-            background-color: #404040; 
-            border-radius: 25px; 
-            padding: 10px;
-        }
-        #label img { width:200px; }
-```
-The info-card pictures can be found in the folder `'docs/img/0..5.jpg'`. Click on an info card will pick one of the jpg's below (based on the MarkupID):
-
-
- ![](docs/img/0.jpg) | ![](docs/img/1.jpg) | ![](docs/img/2.jpg) | ![](docs/img/3.jpg) | ![](docs/img/4.jpg) | ![](docs/img/5.jpg) |
- --- | --- | --- | --- | --- | ---
-
-
-The HTML string/template is generated by the main `'docs/app.js'`.  
-
-```
-elem.innerHTML = `
- <img src="img/${(e.detail.id % 6)}.jpg"><br>Markup ID:${e.detail.id}`;
-```
-
-> This is where you would add your own customized div with React.js or Vue.js, after you receive the 'onMarkupClick' event
-
-
-##### > Creating your own Camera Views
-
-Steps:
-
-1. Set up your view state (set pivot, environment, FOV, etc)
-2. Go to Chrome Browser debug console
-3. Enter the following:
-
-```
-v=viewer.getState();delete(v.seedURN);delete(v.objectSet);delete(v.renderOptions);delete(v.cutplanes);JSON.stringify(v)
-```
-
-4. Copy and paste the resulting JSON, into the `'viewStates'` variable in `app.js` line65
-
---
-
-.
-## Render Performance Tips:
-
-##### > Reduce Pixel Density
-Use 
->     window.devicePixelRatio = 1;
-Use a reduced pixel density, to get better render performance for a trade-off in pixelation.  Noticable on retina screens like mobile and OSX laptops.
-See the `docs/app.js` file for details.
-
-##### > Use Mesh Consolidation
-```
-    var options = {
-        env: "Local",
-        useConsolidation: true,
-        useADP: false,
-    }
-```
-This change makes a different on larger scenes, but your mileage may vary.
-
---
-
-### References
-
-- Hit Test PointClouds: [StackOverflow](https://stackoverflow.com/questions/28209645/raycasting-involving-individual-points-in-a-three-js-pointcloud)
-- Phillip's PointCloud: [BLOG](https://forge.autodesk.com/blog/high-performance-3d-markups-pointcloud-forge-viewer) 
-- ConXTech AR Demo: [DEMO](http://vrock.it) / [BLOG](https://forge.autodesk.com/blog/conxtech-rethinking-job-site-apples-arkit-forge)
-
+## References
+- [APS Viewer Documentation](https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/overview/)
+- [Original Blog Post by Philippe Leefsma](https://forge.autodesk.com/blog/high-performance-3d-markups-pointcloud-forge-viewer)
+- [THREE.js PointCloud Raycasting](https://stackoverflow.com/questions/28209645/raycasting-involving-individual-points-in-a-three-js-pointcloud)
