@@ -1,184 +1,424 @@
-// MarkupExt.js
-function markup3d(viewer, options) {
-    Autodesk.Viewing.Extension.call(this, viewer, options);
-    this.raycaster = new THREE.Raycaster();
-    this.raycaster.params.PointCloud.threshold = 5; // hit-test markup size.  Change this if markup 'hover' doesn't work
-    this.size = 150.0; // markup size.  Change this if markup size is too big or small
-    this.lineColor = 0xcccccc; // off-white
-    this.labelOffset = new THREE.Vector3(120,120,0);  // label offset 3D line offset position
-    this.xDivOffset = -0.2;  // x offset position of the div label wrt 3D line.
-    this.yDivOffset = 0.4;  // y offset position of the div label wrt 3D line.
-
-    this.scene = viewer.impl.scene; // change this to viewer.impl.sceneAfter with transparency, if you want the markup always on top.
-    this.markupItems = []; // array containing markup data
-    this.pointCloud; // three js point-cloud mesh object
-    this.line3d; // three js point-cloud mesh object
-    this.camera = viewer.impl.camera;
-    this.hovered; // index of selected pointCloud id, based on markupItems array
-    this.selected; // index of selected pointCloud id, based on markupItems array
-    this.label; // x,y div position of selected pointCloud. updated on mouse-move
-    this.offset; // global offset
-
-    this.vertexShader = `
-        uniform float size;
-        varying vec3 vColor;
-        void main() {
-            vColor = color;
-            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            gl_PointSize = size * ( size / (length(mvPosition.xyz) + 1.0) );
-            gl_Position = projectionMatrix * mvPosition;
-        }
-    `
-
-    this.fragmentShader = `
-        uniform sampler2D tex;
-        varying vec3 vColor;
-        void main() {
-            gl_FragColor = vec4( vColor.x, vColor.x, vColor.x, 1.0 );
-            gl_FragColor = gl_FragColor * texture2D(tex, vec2((gl_PointCoord.x+vColor.y*1.0)/4.0, 1.0-gl_PointCoord.y));
-            if (gl_FragColor.w < 0.5) discard;
-        }
-    `
-
-}
-
-markup3d.prototype = Object.create(Autodesk.Viewing.Extension.prototype);
-markup3d.prototype.constructor = markup3d;
-
-markup3d.prototype.updateHitTest = function(event) {
-    // on mouse move event, check if ray hit with pointcloud, move selection cursor
-    // https://stackoverflow.com/questions/28209645/raycasting-involving-individual-points-in-a-three-js-pointcloud
-    if (!this.pointCloud) return;
-
-    let canvas = event.target;
-    let _x = event.offsetX * canvas.width / canvas.clientWidth | 0;
-    let _y = event.offsetY * canvas.height / canvas.clientHeight | 0;
-    let x = _x / canvas.clientWidth + -1; // scales from -1 to 1
-    let y = _y / canvas.clientHeight + -1; // scales from -1 to 1
-
-    var vector = new THREE.Vector3(x, y, 0.5).unproject(this.camera);
-    this.raycaster.set(this.camera.position, vector.sub(this.camera.position).normalize());
-    var nodes = this.raycaster.intersectObject(this.pointCloud);
-    if (nodes.length > 0) {
-        if (this.hovered)
-            this.geometry.colors[this.hovered].r = 1.0;
-        this.hovered = nodes[0].index;
-        this.geometry.colors[this.hovered].r = 2.0;
-        this.geometry.colorsNeedUpdate = true;
-        viewer.impl.invalidate(true);
+// Info Card Generator
+class InfoCard {
+    static create(item) {
+        const priorities = {
+            'Critical': 'bg-red-500',
+            'High': 'bg-orange-500',
+            'Medium': 'bg-yellow-500',
+            'Low': 'bg-green-500'
+        };
+        
+        const types = ['Issue', 'Warning', 'RFI', 'Quality'];
+        
+        return `
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 p-4 max-w-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full ${priorities[item.priority] || 'bg-gray-500'}"></div>
+                        <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">${types[item.icon]}</span>
+                    </div>
+                    <span class="text-xs text-gray-500">#${item.id}</span>
+                </div>
+                
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">${item.title}</h3>
+                <p class="text-sm text-gray-600 mb-3">${item.description}</p>
+                
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-medium text-gray-500">Priority:</span>
+                        <span class="text-xs px-2 py-1 rounded-full ${priorities[item.priority]} text-white">${item.priority}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-medium text-gray-500">Assignee:</span>
+                        <span class="text-xs text-gray-700">${item.assignee}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-medium text-gray-500">Date:</span>
+                        <span class="text-xs text-gray-700">${item.date}</span>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 }
 
-markup3d.prototype.unload = function() {
-    return true;
-};
+class Markup3DTool extends Autodesk.Viewing.ToolInterface {
+    constructor(viewer, options = {}) {
+        super();
+        this.viewer = viewer;
+        this.options = options;
+        this.names = ['markup3d-tool'];
+        this.active = false;
+        this.overlayName = 'markup3d-overlay';
+        
+        this.config = {
+            size: 150.0,
+            threshold: 5,
+            lineColor: 0xcccccc,
+            labelOffset: new THREE.Vector3(0, 0, 150),
+            xDivOffset: 150,
+            yDivOffset: 150,
+            dataSource: options?.dataSource || 'markupData.json'
+        };
+        this.state = {
+            markupItems: [],
+            hovered: null,
+            selected: null,
+            label: null
+        };
+        this.meshes = {};
+        this.raycaster = new THREE.Raycaster();
+        this.raycaster.params.PointCloud.threshold = this.config.threshold;
+        this.labelElement = document.getElementById('label');
+        
+        // Remove inherited methods to use our own
+        delete this.register;
+        delete this.deregister;
+        delete this.activate;
+        delete this.deactivate;
+        delete this.getPriority;
+        delete this.handleSingleClick;
+        delete this.handleMouseMove;
+    }
 
-markup3d.prototype.load = function() {
-    var self = this;
-    this.offset = viewer.model.getData().globalOffset; // use global offset to align pointCloud with lmv scene
+    getName() {
+        return this.names[0];
+    }
 
-    // setup listeners for new data and mouse events
-    window.addEventListener("newData", e => { this.setMarkupData( e.detail ) }, false);
-    document.addEventListener('mousedown', e => { this.onClick(e) }, true);
-    document.addEventListener('touchstart', e => { this.onClick(e.changedTouches[0]) }, false);
-    document.addEventListener('mousemove', e => { this.onMouseMove(e) }, false);
-    document.addEventListener('touchmove', e => { this.onMouseMove(e.changedTouches[0]) }, false);
-    document.addEventListener('mousewheel', e => { this.onMouseMove(e) }, true);
+    getPriority() {
+        return 50;
+    }
 
-
-    // Load markup points into Point Cloud
-    this.setMarkupData = function(data) {
-        this.markupItems = data;
-        this.geometry = new THREE.Geometry();
-        data.map(item => {
-            point = (new THREE.Vector3(item.x, item.y, item.z));
-            this.geometry.vertices.push(point);
-            this.geometry.colors.push(new THREE.Color(1.0, item.icon, 0)); // icon = 0..2 position in the horizontal icons.png sprite sheet
-        });
-        this.initMesh_PointCloud();
-        this.initMesh_Line();
-    };
-
-
-    this.initMesh_PointCloud = function() {
-        if (this.pointCloud)
-            this.scene.remove(this.pointCloud); //replace existing pointCloud Mesh
-        else {
-            // create new point cloud material
-            var texture = THREE.ImageUtils.loadTexture("img/icons.png");
-            var material = new THREE.ShaderMaterial({
-                vertexColors: THREE.VertexColors,
-                fragmentShader: this.fragmentShader,
-                vertexShader: this.vertexShader,
-                depthWrite: true,
-                depthTest: true,
-                uniforms: {
-                    size: { type: "f", value: this.size },
-                    tex: { type: "t", value: texture }
-                }
+    activate(name, viewer) {
+        if (!this.active) {
+            this.active = true;
+            
+            if (!this.viewer.overlays.hasScene(this.overlayName)) {
+                this.viewer.overlays.addScene(this.overlayName);
+            }
+            
+            this.loadMarkupData().then(() => {
+                this.viewer.addEventListener(Autodesk.Viewing.CAMERA_CHANGE_EVENT, () => this.updateInfoCardPosition());
             });
         }
-        this.pointCloud = new THREE.PointCloud(this.geometry, material);
-        this.pointCloud.position.sub( this.offset );
-        if (!this.viewer.overlays.hasScene('custom-scene')) {
-this.viewer.overlays.addScene('custom-scene');
-}
- this.viewer.overlays.addMesh(this.pointCloud , 'custom-scene');
-
+        
+        return true;
     }
 
-
-    this.initMesh_Line = function() {
-        var geom = new THREE.Geometry();
-        geom.vertices = [new THREE.Vector3(0, 0, 0),  new THREE.Vector3(0,1,1), new THREE.Vector3(1,1,1) ];
-        geom.faces = [new THREE.Face3(0,1,2)];
-        this.line3d = new THREE.Mesh( geom, new THREE.MeshBasicMaterial({ color: this.lineColor, side: THREE.DoubleSide }) );
-        this.line3d.position.sub( this.offset );
-        if (!this.viewer.overlays.hasScene('custom-scene')) {
-this.viewer.overlays.addScene('custom-scene');
-}
- this.viewer.overlays.addMesh(this.line3d, 'custom-scene');
-
+    deactivate(name) {
+        if (this.active) {
+            this.cleanup();
+            this.active = false;
+        }
+        return true;
     }
 
-    this.update_Line = function() {
-        var position = this.pointCloud.geometry.vertices[this.selected].clone();
-        this.line3d.geometry.vertices[0] = position;
-        this.line3d.geometry.vertices[1].set( position.x + this.labelOffset.x * Math.sign(position.x), position.y + this.labelOffset.y, position.z + this.labelOffset.z );
-        this.line3d.geometry.vertices[2].set( position.x + this.labelOffset.x * Math.sign(position.x), position.y + 20 + this.labelOffset.y, position.z + this.labelOffset.z );
-        this.line3d.geometry.verticesNeedUpdate = true;
+    handleSingleClick(event, button) {
+        if (!this.active || button !== 0) return false;
+        return this.onClick(event);
     }
 
-    this.update_DivLabel = function(eventName){
-        var position = this.line3d.geometry.vertices[1].clone().sub(this.offset);
-        this.label = position.project(this.camera);
-        window.dispatchEvent(new CustomEvent(eventName, {
-            'detail': {
-                id: this.selected,
-                x: this.label.x + this.xDivOffset,
-                y: this.label.y + this.yDivOffset,
+    handleMouseMove(event) {
+        if (!this.active) return false;
+        this.onMouseMove(event);
+        return false;
+    }
+
+    async loadMarkupData() {
+        try {
+            const response = await fetch(this.config.dataSource);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        }));
+            const data = await response.json();
+            this.setMarkupData(data);
+        } catch (error) {
+            console.error('Failed to load markup data:', error);
+        }
     }
 
-    // Dispatch Message when a point is clicked
-    this.onMouseMove = function(event) {
-        this.update_DivLabel('onMarkupMove');
+    setMarkupData(data) {
+        this.state.markupItems = data;
+        this.createGeometry(data);
+        this.createPointCloud();
+        this.createLine();
+    }
+
+    createGeometry(data) {
+        this.geometry = new THREE.Geometry();
+        data.forEach(item => {
+            this.geometry.vertices.push(new THREE.Vector3(item.x, item.y, item.z));
+            this.geometry.colors.push(new THREE.Color(1.0, item.icon, 0));
+        });
+    }
+
+    createPointCloud() {
+        if (this.meshes.pointCloud) {
+            this.removeFromScene(this.meshes.pointCloud);
+        }
+        
+        const material = new THREE.ShaderMaterial({
+            vertexColors: THREE.VertexColors,
+            fragmentShader: this.fragmentShader,
+            vertexShader: this.vertexShader,
+            depthWrite: true,
+            depthTest: true,
+            uniforms: {
+                size: { type: 'f', value: this.config.size },
+                tex: { type: 't', value: THREE.ImageUtils.loadTexture('img/icons.png') }
+            }
+        });
+
+        this.meshes.pointCloud = new THREE.PointCloud(this.geometry, material);
+        this.meshes.pointCloud.position.sub(this.getGlobalOffset());
+        this.addToScene(this.meshes.pointCloud);
+    }
+
+    createLine() {
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x000000, 
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        this.meshes.line = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 100, 8), material);
+        this.meshes.line.position.sub(this.getGlobalOffset());
+        this.addToScene(this.meshes.line);
+    }
+
+    performHitTest(event) {
+        if (!this.meshes.pointCloud) return null;
+
+        const { x, y } = this.getCanvasCoordinates(event);
+        const vector = new THREE.Vector3(x, y, 0.5).unproject(this.viewer.impl.camera);
+        
+        this.raycaster.set(
+            this.viewer.impl.camera.position,
+            vector.sub(this.viewer.impl.camera.position).normalize()
+        );
+
+        const intersects = this.raycaster.intersectObject(this.meshes.pointCloud);
+        return intersects.length > 0 ? intersects[0].index : null;
+    }
+
+    updateHitTest(event) {
+        const hitIndex = this.performHitTest(event);
+        
+        if (hitIndex !== null) {
+            this.updateHoverState(hitIndex);
+        } else {
+            if (this.state.hovered !== null) {
+                this.geometry.colors[this.state.hovered].r = 1.0;
+                this.state.hovered = null;
+                this.geometry.colorsNeedUpdate = true;
+                this.viewer.impl.invalidate(true);
+            }
+        }
+    }
+
+    updateHoverState(index) {
+        if (this.state.hovered !== null) {
+            this.geometry.colors[this.state.hovered].r = 1.0;
+        }
+        
+        this.state.hovered = index;
+        this.geometry.colors[index].r = 2.0;
+        this.geometry.colorsNeedUpdate = true;
+        this.viewer.impl.invalidate(true);
+    }
+
+    updateLine() {
+        const position = this.meshes.pointCloud.geometry.vertices[this.state.selected].clone();
+        const { labelOffset } = this.config;
+        
+        this.meshes.line.position.set(
+            position.x + labelOffset.x * Math.sign(position.x),
+            position.y + labelOffset.y,
+            position.z + labelOffset.z
+        );
+        
+        this.updateLineOrientation();
+    }
+
+    updateLineOrientation() {
+        if (!this.meshes.line || this.state.selected === null) return;
+        
+        const camera = this.viewer.impl.camera;
+        this.meshes.line.lookAt(camera.position);
+    }
+
+    updateInfoCard() {
+        const position = this.meshes.line.position
+            .clone()
+            .sub(this.getGlobalOffset());
+        
+        this.state.label = position.project(this.viewer.impl.camera);
+        
+        // Convert normalized device coordinates (-1 to 1) to screen coordinates
+        const x = (this.state.label.x + 1) * 0.5 * innerWidth + this.config.xDivOffset;
+        const y = (-this.state.label.y + 1) * 0.5 * innerHeight + this.config.yDivOffset;
+        
+        this.labelElement.style.left = x + 'px';
+        this.labelElement.style.top = y + 'px';
+        this.labelElement.style.display = 'block';
+        
+        // Generate and display info card content
+        const item = this.state.markupItems[this.state.selected];
+        if (item) {
+            this.labelElement.innerHTML = InfoCard.create(item);
+        }
+    }
+
+    updateInfoCardPosition() {
+        if (this.state.selected === null || !this.labelElement) return;
+        
+        const position = this.meshes.line.position
+            .clone()
+            .sub(this.getGlobalOffset());
+        
+        this.state.label = position.project(this.viewer.impl.camera);
+        
+        // Convert normalized device coordinates (-1 to 1) to screen coordinates
+        const x = (this.state.label.x + 1) * 0.5 * innerWidth + this.config.xDivOffset;
+        const y = (-this.state.label.y + 1) * 0.5 * innerHeight + this.config.yDivOffset;
+        
+        this.labelElement.style.left = x + 'px';
+        this.labelElement.style.top = y + 'px';
+    }
+
+    handleDirectClick(event) {
+        if (event.button === 0) {
+            this.onClick(event);
+        }
+    }
+
+    onMouseMove(event) {
+        if (this.state.selected !== null) {
+            this.updateInfoCardPosition();
+        }
         this.updateHitTest(event);
+        return false;
     }
 
-    this.onClick = function() {
-        this.updateHitTest(event);
-        if (!this.hovered) return;
-        this.selected = this.hovered;
-        this.update_Line();
-        this.update_DivLabel('onMarkupClick');
-        viewer.impl.invalidate(true);
-        viewer.clearSelection();
+    onClick(event) {
+        const hitIndex = this.performHitTest(event);
+        
+        if (hitIndex === null) {
+            return false;
+        }
+        
+        this.state.selected = hitIndex;
+        this.updateLine();
+        this.updateInfoCard();
+        this.viewer.impl.invalidate(true);
+        this.viewer.clearSelection();
+        
+        return true;
     }
 
-    return true;
-};
+    updateLine() {
+        if (!this.meshes.line) return;
+        
+        const startPos = this.meshes.pointCloud.geometry.vertices[this.state.selected].clone();
+        const endPos = startPos.clone().add(this.config.labelOffset);
+        
+        // Position cylinder at midpoint between start and end
+        const midpoint = startPos.clone().add(endPos).multiplyScalar(0.5);
+        this.meshes.line.position.copy(midpoint);
+        this.meshes.line.position.sub(this.getGlobalOffset());
+        
+        // Scale cylinder to match the vertical distance (300 units)
+        const length = this.config.labelOffset.length();
+        this.meshes.line.scale.y = length / 100; // Scale to match distance
+        
+        // Rotate cylinder to align with Z-axis (cylinder is Y-axis by default)
+        this.meshes.line.rotation.set(Math.PI / 2, 0, 0); // Rotate 90 degrees around X-axis
+        
+        this.meshes.line.visible = true;
+        this.viewer.impl.invalidate(true);
+    }
 
+    getCanvasCoordinates(event) {
+        const canvas = event.target;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: ((event.offsetX || event.clientX - rect.left) / canvas.clientWidth) * 2 - 1,
+            y: -((event.offsetY || event.clientY - rect.top) / canvas.clientHeight) * 2 + 1
+        };
+    }
 
-Autodesk.Viewing.theExtensionManager.registerExtension('markup3d', markup3d);
+    getGlobalOffset() {
+        return this.viewer.model.getData().globalOffset;
+    }
+
+    addToScene(mesh) {
+        this.viewer.overlays.addMesh(mesh, this.overlayName);
+    }
+
+    removeFromScene(mesh) {
+        this.viewer.overlays.removeMesh(mesh, this.overlayName);
+    }
+
+    cleanup() {
+        Object.values(this.meshes).forEach(mesh => mesh && this.removeFromScene(mesh));
+        this.meshes = {};
+        this.state.hovered = null;
+        this.state.selected = null;
+        this.hideInfoCard();
+    }
+
+    get vertexShader() {
+        return `
+            uniform float size;
+            varying vec3 vColor;
+            void main() {
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = size * (size / (length(mvPosition.xyz) + 1.0));
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+    }
+
+    get fragmentShader() {
+        return `
+            uniform sampler2D tex;
+            varying vec3 vColor;
+            void main() {
+                gl_FragColor = vec4(vColor.x, vColor.x, vColor.x, 1.0);
+                gl_FragColor = gl_FragColor * texture2D(tex, vec2((gl_PointCoord.x + vColor.y * 1.0) / 4.0, 1.0 - gl_PointCoord.y));
+                if (gl_FragColor.w < 0.5) discard;
+            }
+        `;
+    }
+}
+
+// Extension wrapper to manage the tool
+class Markup3D extends Autodesk.Viewing.Extension {
+    constructor(viewer, options) {
+        super(viewer, options);
+        this.tool = null;
+    }
+
+    async load() {
+        this.tool = new Markup3DTool(this.viewer, this.options);
+        this.viewer.toolController.registerTool(this.tool);
+        
+        setTimeout(() => {
+            this.viewer.toolController.activateTool(this.tool.getName());
+        }, 100);
+        
+        return true;
+    }
+
+    unload() {
+        if (this.tool) {
+            this.viewer.toolController.deactivateTool(this.tool.getName());
+            this.viewer.toolController.deregisterTool(this.tool);
+            this.tool = null;
+        }
+        return true;
+    }
+}
+
+Autodesk.Viewing.theExtensionManager.registerExtension('markup3d', Markup3D);
